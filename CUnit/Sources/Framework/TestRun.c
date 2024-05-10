@@ -768,15 +768,7 @@ static void add_failure(CU_pFailureRecord* ppFailure,
   }
 
   if (NULL != szFunction) {
-    pFailureNew->strFunction = (char*)CU_MALLOC(strlen(szFunction) + 1);
-    if(NULL == pFailureNew->strFunction) {
-      if(NULL != pFailureNew->strFileName) {
-        CU_FREE(pFailureNew->strFileName);
-      }
-      CU_FREE(pFailureNew);
-      return;
-    }
-    strcpy(pFailureNew->strFunction, szFunction);
+    pFailureNew->strFunction = szFunction;
   }
 
   if (NULL != szCondition) {
@@ -785,9 +777,7 @@ static void add_failure(CU_pFailureRecord* ppFailure,
       if(NULL != pFailureNew->strFileName) {
         CU_FREE(pFailureNew->strFileName);
       }
-      if(NULL != pFailureNew->strFunction) {
-        CU_FREE(pFailureNew->strFunction);
-      }
+      pFailureNew->strFunction = NULL;
       CU_FREE(pFailureNew);
       return;
     }
@@ -877,7 +867,7 @@ static void cleanup_failure_list(CU_pFailureRecord* ppFailure)
     }
 
     if (NULL != pCurFailure->strFunction) {
-      CU_FREE(pCurFailure->strFunction);
+      pCurFailure->strFunction = NULL;
     }
 
     if (NULL != pCurFailure->strFileName) {

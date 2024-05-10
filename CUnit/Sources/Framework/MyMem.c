@@ -80,10 +80,10 @@ typedef struct mem_event {
   size_t            Size;
   unsigned int      AllocLine;
   char              AllocFilename[MAX_NAME_LENGTH];
-  char              AllocFunction[MAX_NAME_LENGTH];
+  const char*       AllocFunction;
   unsigned int      DeallocLine;
   char              DeallocFilename[MAX_NAME_LENGTH];
-  char              DeallocFunction[MAX_NAME_LENGTH];
+  const char*       DeallocFunction;
   struct mem_event* pNext;
 } MEMORY_EVENT;
 typedef MEMORY_EVENT* PMEMORY_EVENT;
@@ -171,11 +171,10 @@ static PMEMORY_EVENT add_memory_event(PMEMORY_NODE pMemoryNode,
   pMemoryEvent->AllocLine = alloc_line;
   strncpy(pMemoryEvent->AllocFilename, alloc_filename, (size_t) MAX_NAME_LENGTH-1);
   pMemoryEvent->AllocFilename[MAX_NAME_LENGTH-1] = (char)0;
-  strncpy(pMemoryEvent->AllocFunction, alloc_function, (size_t) MAX_NAME_LENGTH-1);
-  pMemoryEvent->AllocFunction[MAX_NAME_LENGTH-1] = (char)0;
+  pMemoryEvent->AllocFunction = alloc_function;
   pMemoryEvent->DeallocLine = NOT_DELETED;
   pMemoryEvent->DeallocFilename[0] = (char)0;
-  pMemoryEvent->DeallocFunction[0] = (char)0;
+  pMemoryEvent->DeallocFunction = NULL;
   pMemoryEvent->pNext = NULL;
 
   /* add the new event to the end of the linked list */
@@ -258,8 +257,7 @@ static void deallocate_memory(void* pLocation,
   pTempEvent->DeallocLine = uiDeletionLine;
   strncpy(pTempEvent->DeallocFilename, szDeletionFileName, MAX_NAME_LENGTH-1);
   pTempEvent->DeallocFilename[MAX_NAME_LENGTH-1] = (char)0;
-  strncpy(pTempEvent->DeallocFunction, szDeletionFunction, MAX_NAME_LENGTH-1);
-  pTempEvent->DeallocFunction[MAX_NAME_LENGTH-1] = (char)0;
+  pTempEvent->DeallocFunction = szDeletionFunction;
 }
 
 /*------------------------------------------------------------------------*/
