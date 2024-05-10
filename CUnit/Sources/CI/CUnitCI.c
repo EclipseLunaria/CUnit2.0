@@ -117,6 +117,7 @@ CU_EXPORT void CU_CI_args(int *argc, char*** argv) {
 
 CU_EXPORT int CU_CI_main(int argc, char** argv) {
     int ret = -1;
+    unsigned failure_count = 0;
     cunit_main_argc = argc;
     cunit_main_argv = argv;
 
@@ -143,8 +144,10 @@ CU_EXPORT int CU_CI_main(int argc, char** argv) {
     CCU_basic_add_handlers();
     CU_run_all_tests();
 
-    ret = (int) (CU_get_number_of_failures() + CU_get_number_of_failure_records());
-
+    failure_count = CU_get_number_of_failures() + CU_get_number_of_failure_records();
+    if (failure_count == 0) {
+        ret = 0;
+    }
     CU_cleanup_registry();
 
     return ret;

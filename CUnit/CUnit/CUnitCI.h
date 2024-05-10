@@ -42,6 +42,7 @@ extern "C" {
 
 /**
  * Run all registered tests and save a junit xml report in the current working directory
+ * Exit non-zero if any tests/setup/teardown or asserts have failed.
  */
 #define CU_CI_RUN_SUITES() \
     CU_CI_main(argc, argv)
