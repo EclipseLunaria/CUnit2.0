@@ -1,8 +1,8 @@
 project(CUnit C)
 
 set(CUNIT_VERSION_MAJOR 3)
-set(CUNIT_VERSION_MINOR 2)
-set(CUNIT_VERSION_PATCH 10)
+set(CUNIT_VERSION_MINOR 3)
+set(CUNIT_VERSION_PATCH 1)
 set(CUNIT_VERSION "${CUNIT_VERSION_MAJOR}.${CUNIT_VERSION_MINOR}.${CUNIT_VERSION_PATCH}")
 set(CUNIT_RELEASE cunity)
 
@@ -15,7 +15,7 @@ endif()
 
 
 
-cmake_minimum_required (VERSION 3.2)
+cmake_minimum_required (VERSION 3.5)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
   # repeat here so consumers get more warnings
