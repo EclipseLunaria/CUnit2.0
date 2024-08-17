@@ -60,12 +60,50 @@ extern "C" {
     CU_CI_add_suite(name, init, clean, setup, teardown)
 
 /**
+ * Define a suite export function in a header, for use with CU_CI_SUITE()
+ */
+#define CU_CI_SUITE_H(suitename) CU_CI_suite_def* suitename(void);
+
+/**
+ * Set a static suite definition for the current file.
+ *
+ * For use with suites defined in multiple source files.
+ */
+#define CU_CI_SUITE(suitename, ...)                                                                               \
+CU_CI_suite_def* suitename(void) {                                                                                \
+static CU_CI_named_test __cu_tests[] = {__VA_ARGS__};                                                             \
+static CU_CI_suite_def __cu_def_suite = { #suitename, {}, sizeof(__cu_tests) / sizeof(*__cu_tests), __cu_tests }; \
+  __cu_def_suite.fixtures.init = __cu_suite_setup;                                                                \
+  __cu_def_suite.fixtures.clean = __cu_suite_teardown;                                                            \
+  __cu_def_suite.fixtures.setup = __cu_test_setup;                                                                \
+  __cu_def_suite.fixtures.teardown = __cu_test_teardown;                                                          \
+  return &__cu_def_suite;                                                                                         \
+}
+
+/**
+ * Register a cunit suite defined with CU_CI_SUITE.
+ */
+#define CU_CI_REGISTER_SUITE(suite)                                                            \
+    (void)(__cu_suite_setup || __cu_suite_teardown || __cu_test_setup || __cu_test_teardown ); \
+    do {                                                                                       \
+        CU_CI_suite_def* s = suite();                                                          \
+        CU_CI_add_suite(s->name,                                                               \
+            s->fixtures.init,                                                                  \
+            s->fixtures.clean,                                                                 \
+            s->fixtures.setup,                                                                 \
+            s->fixtures.teardown);                                                             \
+        for(int i = 0; i < s->n_tests; i++) {                                                  \
+            CU_CI_add_test(s->tests[i].name, s->tests[i].test);                                \
+        }                                                                                      \
+    } while(0)
+
+
+/**
  * Add a new test to the current suite.
  *
  * @param test the test function to call.
  */
-#define CUNIT_CI_TEST(test) \
-    CU_CI_add_test(#test, test)
+#define CUNIT_CI_TEST(test) CU_CI_add_test(#test, test)
 
 #define CU_SUITE_SETUP_FUNCNAME    __CUnit_suite_setup
 #define CU_SUITE_TEARDOWN_FUNCNAME __CUnit_suite_teardown
@@ -82,7 +120,7 @@ static CU_TearDownFunc   __cu_test_teardown;
  */
 #define CU_SUITE_SETUP()    static int  CU_SUITE_SETUP_FUNCNAME(void); \
     static CU_InitializeFunc __cu_suite_setup = &CU_SUITE_SETUP_FUNCNAME; \
-    static int  CU_SUITE_SETUP_FUNCNAME(void)
+    static int CU_SUITE_SETUP_FUNCNAME(void)
 
 /**
  * Define a suite cleanup routine
@@ -120,7 +158,7 @@ int main(int argc, char** argv) {       \
 
 
 /**
- * Disable CUCI setup/teardown and silence compiler warnings about unused variables.
+ * Silence compiler warnings about unused test fixture variables.
  */
 #define CUNIT_CI_CLEAR_SETUPS()                                                             \
 do {                                                                                        \
@@ -130,6 +168,11 @@ do {                                                                            
   __cu_test_teardown = NULL;                                                                \
   (void)(__cu_suite_setup || __cu_suite_teardown || __cu_test_setup || __cu_test_teardown );\
 } while (0)
+
+
+#define CU_NAMED_TEST(test) \
+  {#test, test}
+
 
 #ifdef __cplusplus
 }

@@ -42,6 +42,37 @@ extern "C" {
 #endif
 
 /**
+* Define a test with a name
+*/
+typedef struct CU_CI_named_test {
+    const char* name;
+    const CU_TestFunc test;
+} CU_CI_named_test;
+
+/**
+ * Define setup and teardown functions for a suite
+ */
+typedef struct CU_CI_fixture_funcs {
+    CU_InitializeFunc init;
+    CU_CleanupFunc clean;
+    CU_SetUpFunc setup;
+    CU_TearDownFunc teardown;
+} CU_CI_fixture_funcs;
+
+/**
+ * Define a complete suite for later execution
+ */
+typedef struct CU_CI_suite_def {
+    const char* name;
+    CU_CI_fixture_funcs fixtures;
+    const size_t n_tests;
+    CU_CI_named_test* const tests;
+} CU_CI_suite_def;
+
+
+typedef CU_CI_suite_def*  (*CU_SuiteRegFunc)(void);
+
+/**
  * Obtain the command line arguments and count that was passed to CU_CI_main()
  * @param argc
  * @param argv

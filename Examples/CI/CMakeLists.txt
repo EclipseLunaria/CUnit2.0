@@ -61,3 +61,12 @@ add_test(NAME
 add_test(NAME
   assert-value-printing COMMAND $<TARGET_FILE:assert-value-printing>)
 
+add_executable(ci-split-suites
+        ci-split-common.c
+        ci-split-suite_green.c
+        ci-split-suite_red.c
+        ci-split-suites.c
+)
+target_link_libraries(ci-split-suites
+        cunit
+)

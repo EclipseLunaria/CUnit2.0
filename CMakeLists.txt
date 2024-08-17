@@ -1,10 +1,9 @@
 # Static file is generated/linked against for this project
 #   Fixes issues with toolchains which only support static linking
+cmake_minimum_required (VERSION 3.5)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
-
 project(CUnit C)
 
-cmake_minimum_required (VERSION 3.5)
 
 # If the user hasn't specified a preference for disabling
 # tests/examples, default to leaving them enabled.
