@@ -207,6 +207,24 @@ void CU_SkipImplementation(CU_BOOL value,
   }
 }
 
+static const char* __cu_filter_suite = NULL;
+CU_EXPORT void CU_SetSuiteFilter(const char* suite) {
+  __cu_filter_suite = suite;
+}
+
+CU_EXPORT const char* CU_GetSuiteFilter(void) {
+  return __cu_filter_suite;
+}
+
+static const char* __cu_filter_test = NULL;
+CU_EXPORT void CU_SetTestFilter(const char* test) {
+  __cu_filter_test = test;
+}
+
+CU_EXPORT const char* CU_GetTestFilter(void) {
+  return __cu_filter_test;
+}
+
 /*------------------------------------------------------------------------*/
 void CU_set_suite_start_handler(CU_SuiteStartMessageHandler pSuiteStartHandler)
 {
@@ -405,6 +423,22 @@ int CU_count_suite_failures(CU_pSuite pSuite)
   return n;
 }
 
+void CU_print_all_suite_tests(CU_pTestRegistry pRegistry)
+{
+  if (pRegistry) {
+    CU_pSuite s = pRegistry->pSuite;
+    while (s) {
+      printf("%s\n", s->pName);
+      CU_pTest t = s->pTest;
+      while (t) {
+        printf("  %s\n", t->pName);
+        t = t->pNext;
+      }
+      s = s->pNext;
+    }
+  }
+}
+
 int CU_count_all_tests(CU_pTestRegistry pRegistry)
 {
   int n = 0;
@@ -468,6 +502,22 @@ CU_pRunSummary CU_get_run_summary(void)
   return &f_run_summary;
 }
 
+
+int CU_is_suite_filtered(CU_pSuite pSuite) {
+  if (__cu_filter_suite != NULL) {
+    return strcmp(__cu_filter_suite, pSuite->pName);
+  }
+  return 0;
+}
+
+int CU_is_test_filtered(CU_pTest pTest) {
+  if (__cu_filter_test != NULL) {
+    return strcmp(__cu_filter_test, pTest->pName);
+  }
+  return 0;
+}
+
+
 /*------------------------------------------------------------------------*/
 CU_ErrorCode CU_run_all_tests(void)
 {
@@ -489,8 +539,10 @@ CU_ErrorCode CU_run_all_tests(void)
 
     pSuite = pRegistry->pSuite;
     while ((NULL != pSuite) && ((CUE_SUCCESS == result) || (CU_get_error_action() == CUEA_IGNORE))) {
-      result2 = run_single_suite(pSuite, &f_run_summary);
-      result = (CUE_SUCCESS == result) ? result2 : result;  /* result = 1st error encountered */
+      if (!CU_is_suite_filtered(pSuite)) {
+        result2 = run_single_suite(pSuite, &f_run_summary);
+        result = (CUE_SUCCESS == result) ? result2 : result;  /* result = 1st error encountered */
+      }
       pSuite = pSuite->pNext;
     }
 
@@ -1068,8 +1120,11 @@ static CU_ErrorCode run_single_test(CU_pTest pTest, CU_pRunSummary pRunSummary)
 
   f_pCurTest = pTest;
 
-
   if ((pTest->fSuiteCleanup || pTest->fSuiteSetup)) return CUE_TEST_INACTIVE;
+  if (CU_is_suite_filtered(f_pCurSuite) || CU_is_test_filtered(pTest)) {
+    pTest->fSkipped = CU_TRUE;
+    pTest->fActive = CU_FALSE;
+  }
 
   CCU_MessageHandler_Run(CUMSG_TEST_STARTED, f_pCurSuite, f_pCurTest, NULL);
 

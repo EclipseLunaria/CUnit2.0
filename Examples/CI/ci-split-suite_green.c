@@ -20,6 +20,6 @@ static void test_green_baa(void) {
 
 
 CU_CI_SUITE(suite_green,
-            CU_NAMED_TEST(test_green_baa),
-            CU_NAMED_TEST(test_green_foo),
+            CUNIT_CI_TEST(test_green_baa),
+            CUNIT_CI_TEST(test_green_foo)
             );

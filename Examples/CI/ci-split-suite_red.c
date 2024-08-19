@@ -12,8 +12,7 @@ static void test_red_baa(void) {
     fprintf(stderr, "baa is red\n");
 }
 
-
 CU_CI_SUITE(suite_red,
-            CU_NAMED_TEST(test_red_baa),
-            CU_NAMED_TEST(test_red_foo),
-            );
+            CUNIT_CI_TEST(test_red_baa),
+            CUNIT_CI_TEST(test_red_foo)
+            )

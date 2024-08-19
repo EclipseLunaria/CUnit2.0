@@ -409,6 +409,8 @@ CU_EXPORT int CU_count_all_tests(CU_pTestRegistry pRegistry);
  * @return
  */
 
+CU_EXPORT void CU_print_all_suite_tests(CU_pTestRegistry pRegistry);
+
 CU_EXPORT CU_pRunSummary CU_get_run_summary(void);
 /**<
  *  Retrieves the entire run summary for the last test run (reset each run).
@@ -517,12 +519,36 @@ CU_EXPORT void CU_SkipImplementation(CU_BOOL bValue,
 #define CU_SKIP_IF(value) \
   { CU_SkipImplementation((value), __LINE__, ("CU_SKIP_IF(" #value ")"), __FILE__, CU_FUNC); }
 
+/**
+ * Get the test suite runtime filter value
+ */
+CU_EXPORT const char* CU_GetSuiteFilter(void);
 
+/**
+ * Set the test suite runtime filter value
+ */
+CU_EXPORT void CU_SetSuiteFilter(const char* suite);
+
+/**
+ * Get the test function runtime filter value
+ */
+CU_EXPORT const char* CU_GetTestFilter(void);
+
+/**
+ * Set the test function runtime filter value
+ */
+CU_EXPORT void CU_SetTestFilter(const char* test);
 
 #ifdef USE_DEPRECATED_CUNIT_NAMES
 typedef CU_FailureRecord  _TestResult;  /**< @deprecated Use CU_FailureRecord. */
 typedef CU_pFailureRecord PTestResult;  /**< @deprecated Use CU_pFailureRecord. */
 #endif  /* USE_DEPRECATED_CUNIT_NAMES */
+
+/** Return zero if this test suite is filtered out */
+CU_EXPORT int CU_is_suite_filtered(CU_pSuite pSuite);
+
+/** Return zero if this test function is filtered out */
+CU_EXPORT int CU_is_test_filtered(CU_pTest pTest);
 
 #ifdef CUNIT_BUILD_TESTS
 void test_cunit_TestRun(void);

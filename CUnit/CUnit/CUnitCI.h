@@ -41,6 +41,12 @@ extern "C" {
 #endif
 
 /**
+ * Silence warnings about unused fixture functions
+ */
+#define CU_CI_FIXTURE_QUIET() \
+  (void)(__cu_suite_setup || __cu_suite_teardown || __cu_test_setup || __cu_test_teardown );
+
+/**
  * Run all registered tests and save a junit xml report in the current working directory
  * Exit non-zero if any tests/setup/teardown or asserts have failed.
  */
@@ -57,53 +63,16 @@ extern "C" {
  * @param teardown test teardown function
  */
 #define CU_CI_DEFINE_SUITE(name, init, clean, setup, teardown) \
-    CU_CI_add_suite(name, init, clean, setup, teardown)
-
-/**
- * Define a suite export function in a header, for use with CU_CI_SUITE()
- */
-#define CU_CI_SUITE_H(suitename) CU_CI_suite_def* suitename(void);
-
-/**
- * Set a static suite definition for the current file.
- *
- * For use with suites defined in multiple source files.
- */
-#define CU_CI_SUITE(suitename, ...)                                                                               \
-CU_CI_suite_def* suitename(void) {                                                                                \
-static CU_CI_named_test __cu_tests[] = {__VA_ARGS__};                                                             \
-static CU_CI_suite_def __cu_def_suite = { #suitename, {}, sizeof(__cu_tests) / sizeof(*__cu_tests), __cu_tests }; \
-  __cu_def_suite.fixtures.init = __cu_suite_setup;                                                                \
-  __cu_def_suite.fixtures.clean = __cu_suite_teardown;                                                            \
-  __cu_def_suite.fixtures.setup = __cu_test_setup;                                                                \
-  __cu_def_suite.fixtures.teardown = __cu_test_teardown;                                                          \
-  return &__cu_def_suite;                                                                                         \
-}
-
-/**
- * Register a cunit suite defined with CU_CI_SUITE.
- */
-#define CU_CI_REGISTER_SUITE(suite)                                                            \
-    (void)(__cu_suite_setup || __cu_suite_teardown || __cu_test_setup || __cu_test_teardown ); \
-    do {                                                                                       \
-        CU_CI_suite_def* s = suite();                                                          \
-        CU_CI_add_suite(s->name,                                                               \
-            s->fixtures.init,                                                                  \
-            s->fixtures.clean,                                                                 \
-            s->fixtures.setup,                                                                 \
-            s->fixtures.teardown);                                                             \
-        for(int i = 0; i < s->n_tests; i++) {                                                  \
-            CU_CI_add_test(s->tests[i].name, s->tests[i].test);                                \
-        }                                                                                      \
-    } while(0)
-
+    CU_CI_FIXTURE_QUIET();                                     \
+    CU_CI_add_suite(#name, init, clean, setup, teardown)
 
 /**
  * Add a new test to the current suite.
  *
  * @param test the test function to call.
  */
-#define CUNIT_CI_TEST(test) CU_CI_add_test(#test, test)
+#define CUNIT_CI_TEST(test) \
+    CU_CI_add_test(#test, test)
 
 #define CU_SUITE_SETUP_FUNCNAME    __CUnit_suite_setup
 #define CU_SUITE_TEARDOWN_FUNCNAME __CUnit_suite_teardown
@@ -114,6 +83,37 @@ static CU_InitializeFunc __cu_suite_setup;
 static CU_CleanupFunc    __cu_suite_teardown;
 static CU_SetUpFunc      __cu_test_setup;
 static CU_TearDownFunc   __cu_test_teardown;
+
+/**
+ * Define a suite export function in a header, for use with CU_CI_SUITE()
+ */
+#define CU_CI_SUITE_H(suitename) void suitename(void);
+
+/**
+ * Register the suite definition for the current file.
+ */
+#define CU_CI_SUITE_REGISTER(_suitename, ...)     \
+    CU_CI_DEFINE_SUITE(_suitename,       \
+    __cu_suite_setup,                    \
+    __cu_suite_teardown,                 \
+    __cu_test_setup,                     \
+    __cu_test_teardown);                 \
+    __VA_ARGS__ ;
+
+/**
+ * Set an exported suite definition function for the current file.
+ *
+ * For use with suites defined in multiple source files via CU_CI_ADD_SUITE(name)
+ */
+#define CU_CI_SUITE(_suitename, ...)              \
+void _suitename (void) {                          \
+    CU_CI_SUITE_REGISTER(_suitename, __VA_ARGS__) }
+
+/**
+ * Register a cunit suite defined with CU_CI_SUITE.
+ */
+#define CU_CI_USE_SUITE(suite) CU_CI_FIXTURE_QUIET(); suite()
+
 
 /**
  * Define a suite setup routine
@@ -166,13 +166,7 @@ do {                                                                            
   __cu_suite_teardown = NULL;                                                               \
   __cu_test_setup = NULL;                                                                   \
   __cu_test_teardown = NULL;                                                                \
-  (void)(__cu_suite_setup || __cu_suite_teardown || __cu_test_setup || __cu_test_teardown );\
-} while (0)
-
-
-#define CU_NAMED_TEST(test) \
-  {#test, test}
-
+  CU_CI_FIXTURE_QUIET(); } while (0)
 
 #ifdef __cplusplus
 }

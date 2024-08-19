@@ -45,7 +45,11 @@ static CU_pSuite current_suite = NULL;
 
 static void cu_ci_suite_started(const CU_pSuite pSuite) {
     if (pSuite && pSuite->pName) {
-        fprintf(stdout, _("\nRunning Suite : %s"), pSuite->pName);
+      if (!CU_is_suite_filtered(pSuite)) {
+        fprintf(stdout, _("\nRunning Suite  : %s"), pSuite->pName);
+      } else {
+        fprintf(stdout, _("\nFiltered Suite : %s"), pSuite->pName);
+      }
     }
 }
 
@@ -53,13 +57,19 @@ static void cu_ci_test_started(const CU_pTest pTest, const CU_pSuite pSuite)
 {
     assert(pSuite && "called without a test suite");
     if (pTest && pTest->pName) {
+      if (!CU_is_test_filtered(pTest)) {
         fprintf(stdout, _("\n     Running Test : %s .."), pTest->pName);
+      } else {
+        fprintf(stdout, _("\n     Filtered     : %s .."), pTest->pName);
+      }
     }
 }
 
 static void cu_ci_test_skipped(const CU_pTest pTest, const CU_pSuite pSuite)
 {
-  fprintf(stdout, _("SKIPPED"));
+  if (!CU_is_suite_filtered(pSuite) && !CU_is_test_filtered(pTest)) {
+    fprintf(stdout, _("SKIPPED"));
+  }
 }
 
 static void cu_ci_test_completed(const CU_pTest pTest,
@@ -109,10 +119,75 @@ static void setup_handlers(void) {
 
 static char ** cunit_main_argv = NULL;
 static int cunit_main_argc = 0;
+static int cunit_list_tests = 0;
 
 CU_EXPORT void CU_CI_args(int *argc, char*** argv) {
   *argc = cunit_main_argc;
   *argv = cunit_main_argv;
+}
+
+static void CU_CI_Usage(const char* argv0) {
+  fprintf(stderr, "Usage: %s [-h|--help] [-s SUITE][-t TEST]\n", argv0);
+}
+
+static void CU_CI_Help(void) {
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Run this CUnit CI test program optionally filtering"
+                  " for suites or tests\n\n");
+  fprintf(stderr, "  -h  --help       Print this help message\n");
+  fprintf(stderr, "  -l  --list       Print the list of tests/suites\n");
+  fprintf(stderr, "  -s  SUITE_NAME   Only run tests in SUITE_NAME\n");
+  fprintf(stderr, "  -t  TEST_NAME    Only run tests named TEST_NAME\n");
+  fprintf(stderr, "\nCunit " CU_VERSION "\n\n");
+}
+
+
+static int CU_CI_optparse(int argc, char** argv) {
+  /* I can't believe I'm writing another option parser, but cunit runs on windows/linux and all others where we
+    can't rely on just one parser, so here we go.. */
+  int i = 1;
+  int args_claimed = 1;
+  /* If any option word is "-h" or "--help", print the help message and return CUE_TEST_INACTIVE */
+  for (i = 1; i < argc; i++) {
+    if (strcmp("-h", argv[i]) == 0 || strcmp("--help", argv[i]) == 0) {
+      CU_CI_Usage(argv[0]);
+      CU_CI_Help();
+      return CUE_TEST_INACTIVE;
+    }
+  }
+
+  /* search for filter options */
+  for (i = 1; i < argc; i++) {
+    if (strcmp("-s", argv[i]) == 0) {
+      if (i + 1 < argc) {
+        /* consume next arg as suite filter */
+        i++;
+        CU_SetSuiteFilter(argv[i]);
+        args_claimed += 2;
+        continue;
+      }
+    }
+    if (strcmp("-t", argv[i]) == 0) {
+      if (i + 1 < argc) {
+        /* consume next arg as test filter */
+        i++;
+        CU_SetTestFilter(argv[i]);
+        args_claimed += 2;
+        continue;
+      }
+    }
+    if (strcmp("-l", argv[i]) == 0 || strcmp("--list", argv[i]) == 0) {
+      cunit_list_tests = 1;
+      return CUE_SUCCESS;
+    }
+  }
+
+  if (args_claimed != argc) {
+    CU_CI_Usage(argv[0]);
+    return CUE_TEST_INACTIVE;
+  }
+
+  return CUE_SUCCESS;
 }
 
 CU_EXPORT int CU_CI_main(int argc, char** argv) {
@@ -121,9 +196,35 @@ CU_EXPORT int CU_CI_main(int argc, char** argv) {
     cunit_main_argc = argc;
     cunit_main_argv = argv;
 
+    if (CU_CI_optparse(argc, argv) != CUE_SUCCESS) return -1;
+
+    if (cunit_list_tests != 0) {
+      fprintf(stderr, "Tests defined in %s:\n", argv[0]);
+      CU_print_all_suite_tests(CU_get_registry());
+      return -1;
+    }
+
     if (argc > 0) {
+        char output_path[CUNIT_FILE_PATH_MAX];
+
+        if (CU_GetSuiteFilter() != NULL || CU_GetTestFilter() != NULL) {
+          char output_suffix[512];
+          if (CU_GetSuiteFilter() != NULL) {
+            if (CU_GetTestFilter() != NULL) {
+              snprintf(output_suffix, sizeof output_suffix, "__%s@%s", CU_GetSuiteFilter(), CU_GetTestFilter());
+            } else {
+              snprintf(output_suffix, sizeof output_suffix, "__%s", CU_GetSuiteFilter());
+            }
+          } else {
+            snprintf(output_suffix, sizeof output_suffix, "__@%s", CU_GetTestFilter());
+          }
+          snprintf(output_path, sizeof output_path, "%s%s", CU_get_basename(argv[0]), output_suffix);
+        } else {
+          snprintf(output_path, sizeof output_path, "%s", CU_get_basename(argv[0]));
+        }
+
         fprintf(stdout, _("Starting CUnit test:\n %s\n"), argv[0]);
-        CU_set_output_filename(CU_get_basename(argv[0]));
+        CU_set_output_filename(output_path);
         CU_automated_enable_junit_xml(CU_TRUE);
         CU_automated_package_name_set("CUnit");
 

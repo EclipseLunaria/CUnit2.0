@@ -138,6 +138,9 @@ CU_EXPORT const char* CU_get_basename(const char* path);
 
 #define CU_MAIN_EXE_NAME CU_get_basename(argv[0])
 
+// yes PATH_MAX and _MAX_PATH exist but both are caveats and are filesystem type dependant, not compile time
+#define CUNIT_FILE_PATH_MAX 4096
+
 #ifdef CUNIT_BUILD_TESTS
 void test_cunit_Util(void);
 #endif

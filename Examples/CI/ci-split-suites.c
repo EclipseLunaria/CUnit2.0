@@ -5,7 +5,7 @@
 
 int main(int argc, char** argv)
 {
-    CU_CI_REGISTER_SUITE(suite_green);
-    CU_CI_REGISTER_SUITE(suite_red);
+    CU_CI_USE_SUITE(suite_green);
+    CU_CI_USE_SUITE(suite_red);
     return CU_CI_RUN_SUITES();
 }
