@@ -40,6 +40,44 @@
 extern "C" {
 #endif
 
+#ifndef NO_CU_CI_AUTO_PREMAIN
+/* CU_CI_AUTO_PREMAIN(f) followed by a function body defines function f() which will be executed before main()
+   This can be placed in any source file built into the executable.
+   Based on INITIALIZER implementation from https://stackoverflow.com/a/2390626
+   with correction from https://learn.microsoft.com/en-us/cpp/c-runtime-library/crt-initialization?view=msvc-170
+   Initializer name passed to CU_CI_AUTO_PREMAIN must be globally unique */
+#ifdef __cplusplus
+#  define CU_CI_AUTO_PREMAIN(f)                                                                                            \
+    void f(void);                                                                                                      \
+    struct f##_t_                                                                                                      \
+    {                                                                                                                  \
+      f##_t_(void)                                                                                                     \
+      {                                                                                                                \
+        f();                                                                                                           \
+      }                                                                                                                \
+    };                                                                                                                 \
+    f##_t_ f##_;                                                                                                       \
+    void f(void)
+#elif defined(_MSC_VER)
+#  define CU_CI_AUTO_PREMAIN2_(f, p)                                                                                       \
+    __pragma(section(".CRT$XCV", read))                                                                                \
+    void f(void);                                                                                                      \
+    __declspec(allocate(".CRT$XCV")) void (*f##_)(void) = f;                                                           \
+    __pragma(comment(linker, "/include:" p #f "_")) static void f(void)
+#  ifdef _WIN64
+#    define CU_CI_AUTO_PREMAIN(f) CU_CI_AUTO_PREMAIN2_(f, "")
+#  else
+#    define CU_CI_AUTO_PREMAIN(f) CU_CI_AUTO_PREMAIN2_(f, "_")
+#  endif
+#else
+#  define CU_CI_AUTO_PREMAIN(f)                                                                                            \
+    void f(void) __attribute__((constructor));                                                                         \
+    void f(void)
+#endif
+
+#endif  /** ifndef NO_CU_CI_AUTO_PREMAIN */
+
+
 /**
  * Silence warnings about unused fixture functions
  */
@@ -50,8 +88,16 @@ extern "C" {
  * Run all registered tests and save a junit xml report in the current working directory
  * Exit non-zero if any tests/setup/teardown or asserts have failed.
  */
-#define CU_CI_RUN_SUITES() \
-    CU_CI_main(argc, argv)
+#define CU_CI_RUN_SUITES() CU_CI_main(argc, argv);
+
+/**
+ * Run all registered suites in sorted order, save a junit xml report in the current dir
+ * and return the cunit exit status (0 for no-errors);
+ */
+#define CU_CI_RUN() \
+  CU_CI_FIXTURE_QUIET(); \
+  CU_sort_suites(CU_get_registry()); \
+  return CU_CI_RUN_SUITES()
 
 /**
  * Set the current suite including any setup/teardown functions
@@ -100,13 +146,33 @@ static CU_TearDownFunc   __cu_test_teardown;
     __cu_test_teardown);                 \
     __VA_ARGS__ ;
 
+#define NO_CU_CI_AUTO_PREMAIN
+#ifdef __GNUC__
+  #if __clang__ || __GNUC__ > 7
+  #undef NO_CU_CI_AUTO_PREMAIN
+  #endif
+#endif
+#ifdef _MSC_VER
+#if _MSC_VER > 1900
+  #undef NO_CU_CI_AUTO_PREMAIN
+#endif
+#endif
+
 /**
- * Set an exported suite definition function for the current file.
+ * Set an auto exported suite definition function for the current file.
  *
  * For use with suites defined in multiple source files via CU_CI_ADD_SUITE(name)
+ * and compilers that support __attribute__((constructor)) and modern MSVC
  */
-#define CU_CI_SUITE(_suitename, ...)              \
-void _suitename (void) {                          \
+#ifndef NO_CU_CI_AUTO_PREMAIN
+#define CU_CI_AUTO_SUITE(_suitename, ...)                       \
+void _suitename (void) {                                   \
+    CU_CI_SUITE_REGISTER(_suitename, __VA_ARGS__) }        \
+CU_CI_AUTO_PREMAIN(auto_cu_ ## _suitename) { _suitename(); }
+#endif
+
+#define CU_CI_SUITE(_suitename, ...)                \
+void _suitename (void) {                            \
     CU_CI_SUITE_REGISTER(_suitename, __VA_ARGS__) }
 
 /**

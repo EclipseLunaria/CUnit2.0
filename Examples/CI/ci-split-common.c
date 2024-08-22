@@ -1,7 +1,3 @@
-//
-// Created by Ian Norton on 2024-08-17.
-//
-
 #include "ci-split-common.h"
 
 void shared_setup_function(void) {

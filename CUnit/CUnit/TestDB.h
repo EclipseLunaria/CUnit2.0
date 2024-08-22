@@ -280,6 +280,9 @@ CU_ErrorCode CU_initialize_registry(void);
  */
 
 CU_EXPORT
+void CU_sort_suites(CU_pTestRegistry pRegistry);
+
+CU_EXPORT
 void CU_cleanup_registry(void);
 /**<
  *  Clears the test registry.

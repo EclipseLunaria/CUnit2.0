@@ -828,6 +828,47 @@ static void insert_suite(CU_pTestRegistry pRegistry, CU_pSuite pSuite)
   }
 }
 
+/**
+ * Sort the registered test suites into alphabetical order
+ * @param pRegistry
+ */
+void CU_sort_suites(CU_pTestRegistry pRegistry) {
+  /* bubble sort suites by name */
+  if (pRegistry && pRegistry->uiNumberOfSuites > 1) {
+    int swapped;
+    CU_pSuite p1 = NULL;
+    CU_pSuite p2 = NULL;
+    do {
+      swapped = 0;
+      p1 = pRegistry->pSuite;;
+      while (p1->pNext != NULL) {
+        p2 = p1->pNext;
+        if (strcmp(p1->pName, p2->pName) > 0) {
+          swapped = 1;
+          /* swap these two suites */
+          if (p1 == pRegistry->pSuite) {
+            pRegistry->pSuite = p2;
+          }
+          if (p1->pPrev) {
+            p1->pPrev->pNext = p2;
+          }
+          if (p2->pNext) {
+            p2->pNext->pPrev = p1;
+          }
+
+          p1->pNext = p2->pNext;
+          p1->pPrev = p2;
+          p2->pPrev = p1->pPrev;
+          p2->pNext = p1;
+
+          break;
+        }
+        p1 = p1->pNext;
+      }
+    } while(swapped);
+  }
+}
+
 /*------------------------------------------------------------------------*/
 /**
  *  Internal function to create a new test case having the specified parameters.

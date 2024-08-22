@@ -65,8 +65,25 @@ add_executable(ci-split-suites
         ci-split-common.c
         ci-split-suite_green.c
         ci-split-suite_red.c
+        ci-split-suite_blue.c
         ci-split-suites.c
 )
 target_link_libraries(ci-split-suites
         cunit
 )
+add_test(NAME
+  ci-split-suites COMMAND
+    $<TARGET_FILE:ci-split-suites>)
+
+add_executable(ci-split-noauto
+  ci-split-common.c
+  ci-split-suite_orange.c
+  ci-split-suite_yellow.c
+  ci-split-noauto.c
+)
+target_link_libraries(ci-split-noauto
+  cunit
+)
+add_test(NAME
+  ci-split-noauto COMMAND
+  $<TARGET_FILE:ci-split-noauto>)
