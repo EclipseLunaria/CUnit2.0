@@ -288,34 +288,38 @@ CU_EXPORT void CU_automated_render_junit(char** outstr, const char* filename) {
 
     /* iterate through all suites */
     while (suite) {
-      CU_pTest test = suite->pTest;
-      int errors = count_suite_init_errors(suite);
-      int test_count = CU_count_suite_tests(suite) + count_suite_init_funcs(suite);
-      int test_failures = errors + CU_count_suite_failures(suite);
-      esc_name = _escape_string(suite->pName);
-      _dstr_putf(&dst,
-              "  <testsuite errors=\"%d\" failures=\"%d\" tests=\"%d\" name=\"%s\" time=\"%f\">\n",
-              errors,
-              test_failures,
-              test_count,
-              suite->pName,
-              CU_get_suite_duration(suite)
-              );
+      if (!CU_is_suite_filtered(suite)) {
+        CU_pTest test = suite->pTest;
+        int errors = count_suite_init_errors(suite);
+        int test_count = CU_count_suite_tests(suite) + count_suite_init_funcs(suite);
+        int test_failures = errors + CU_count_suite_failures(suite);
+        esc_name = _escape_string(suite->pName);
+        _dstr_putf(&dst,
+                   "  <testsuite errors=\"%d\" failures=\"%d\" tests=\"%d\" name=\"%s\" time=\"%f\">\n",
+                   errors,
+                   test_failures,
+                   test_count,
+                   esc_name,
+                   CU_get_suite_duration(suite)
+        );
 
-      /* record suite setup */
-      if (suite->pInitializeFuncTest) format_testcase(&dst, esc_name, suite, suite->pInitializeFuncTest);
+        /* record suite setup */
+        if (suite->pInitializeFuncTest) format_testcase(&dst, esc_name, suite, suite->pInitializeFuncTest);
 
-      /* iterate through all the tests */
-      while (test) {
-        format_testcase(&dst, esc_name, suite, test);
-        test = test->pNext;
+        /* iterate through all the tests */
+        while (test) {
+          if (!CU_is_test_filtered(test)) {
+            format_testcase(&dst, esc_name, suite, test);
+          }
+          test = test->pNext;
+        }
+
+        /* record suite cleanup */
+        if (suite->pCleanupFuncTest) format_testcase(&dst, esc_name, suite, suite->pCleanupFuncTest);
+
+        _dstr_puts(&dst, "  </testsuite>\n");
+        free(esc_name);
       }
-
-      /* record suite cleanup */
-      if (suite->pCleanupFuncTest) format_testcase(&dst, esc_name, suite, suite->pCleanupFuncTest);
-
-      _dstr_puts(&dst, "  </testsuite>\n");
-      free(esc_name);
       suite = suite->pNext;
     }
 
