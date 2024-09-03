@@ -22,7 +22,7 @@ stages:
     - ctest --output-on-failure    
     - ./Examples/CI/cicd-pass-plain
     - ./Examples/CI/cicd-pass-setupfuncs
-    - python3 -m unit2htmlreport --summary-matrix Examples/CI/*-Results.xml
+    - python3 -m junit2htmlreport --summary-matrix Examples/CI/*-Results.xml
     - cpack -G TGZ CUnit
   artifacts:
     paths:
