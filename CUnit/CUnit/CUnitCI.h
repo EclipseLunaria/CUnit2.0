@@ -165,7 +165,8 @@ static CU_TearDownFunc   __cu_test_teardown;
  * and compilers that support __attribute__((constructor)) and modern MSVC
  */
 #ifndef NO_CU_CI_AUTO_PREMAIN
-#define CU_CI_AUTO_SUITE(_suitename, ...)                       \
+#define CU_CI_AUTO_SUITE(_suitename, ...)                  \
+void _suitename (void);                                    \
 void _suitename (void) {                                   \
     CU_CI_SUITE_REGISTER(_suitename, __VA_ARGS__) }        \
 CU_CI_AUTO_PREMAIN(auto_cu_ ## _suitename) { _suitename(); }
