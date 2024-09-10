@@ -166,20 +166,21 @@ static CU_TearDownFunc   __cu_test_teardown;
  */
 #ifndef NO_CU_CI_AUTO_PREMAIN
 #define CU_CI_AUTO_SUITE(_suitename, ...)                  \
-void _suitename (void);                                    \
-void _suitename (void) {                                   \
+void cu_suite_ ## _suitename (void);                                    \
+void cu_suite_ ## _suitename (void) {                                   \
     CU_CI_SUITE_REGISTER(_suitename, __VA_ARGS__) }        \
-CU_CI_AUTO_PREMAIN(auto_cu_ ## _suitename) { _suitename(); }
+CU_CI_AUTO_PREMAIN(auto_cu_ ## _suitename) { cu_suite_ ## _suitename(); }
 #endif
 
 #define CU_CI_SUITE(_suitename, ...)                \
-void _suitename (void) {                            \
+void cu_suite_ ## _suitename (void);                             \
+void cu_suite_ ## _suitename (void) {                            \
     CU_CI_SUITE_REGISTER(_suitename, __VA_ARGS__) }
 
 /**
  * Register a cunit suite defined with CU_CI_SUITE.
  */
-#define CU_CI_USE_SUITE(suite) CU_CI_FIXTURE_QUIET(); suite()
+#define CU_CI_USE_SUITE(suite) CU_CI_FIXTURE_QUIET(); void cu_suite_ ## suite(void); cu_suite_ ## suite()
 
 
 /**
