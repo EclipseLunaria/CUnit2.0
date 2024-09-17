@@ -843,7 +843,7 @@ void CU_sort_suites(CU_pTestRegistry pRegistry) {
     CU_pSuite* sorted = CU_MALLOC(pRegistry->uiNumberOfSuites * sizeof(CU_pSuite));
     CU_pSuite cur = pRegistry->pSuite;
     CU_pSuite prev = NULL;
-    int i;
+    unsigned i;
 
     for (i = 0; i < pRegistry->uiNumberOfSuites; i++) {
       sorted[i] = cur;
