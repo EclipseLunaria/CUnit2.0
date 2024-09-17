@@ -828,44 +828,41 @@ static void insert_suite(CU_pTestRegistry pRegistry, CU_pSuite pSuite)
   }
 }
 
+static int CU_cmp_suites(const void *a, const void *b) {
+  CU_pSuite sa = (CU_pSuite)a;
+  CU_pSuite sb = (CU_pSuite)b;
+  return strcmp(sa->pName, sb->pName);
+}
+
 /**
  * Sort the registered test suites into alphabetical order
  * @param pRegistry
  */
 void CU_sort_suites(CU_pTestRegistry pRegistry) {
-  /* bubble sort suites by name */
   if (pRegistry && pRegistry->uiNumberOfSuites > 1) {
-    int swapped;
-    CU_pSuite p1 = NULL;
-    CU_pSuite p2 = NULL;
-    do {
-      swapped = 0;
-      p1 = pRegistry->pSuite;;
-      while (p1->pNext != NULL) {
-        p2 = p1->pNext;
-        if (strcmp(p1->pName, p2->pName) > 0) {
-          swapped = 1;
-          /* swap these two suites */
-          if (p1 == pRegistry->pSuite) {
-            pRegistry->pSuite = p2;
-          }
-          if (p1->pPrev) {
-            p1->pPrev->pNext = p2;
-          }
-          if (p2->pNext) {
-            p2->pNext->pPrev = p1;
-          }
+    CU_pSuite* sorted = CU_MALLOC(pRegistry->uiNumberOfSuites * sizeof(CU_pSuite));
+    CU_pSuite cur = pRegistry->pSuite;
+    CU_pSuite prev = NULL;
+    int i;
 
-          p1->pNext = p2->pNext;
-          p1->pPrev = p2;
-          p2->pPrev = p1->pPrev;
-          p2->pNext = p1;
+    for (i = 0; i < pRegistry->uiNumberOfSuites; i++) {
+      sorted[i] = cur;
+      cur = cur->pNext;
+    }
 
-          break;
-        }
-        p1 = p1->pNext;
+    qsort(sorted, pRegistry->uiNumberOfSuites, sizeof(*sorted), &CU_cmp_suites);
+
+    for (i = 0; i < pRegistry->uiNumberOfSuites; i++) {
+      cur = sorted[i];
+      cur->pPrev = prev;
+      if (prev) {
+        prev->pNext = cur;
       }
-    } while(swapped);
+      prev = cur;
+    }
+    cur->pNext = NULL;
+    pRegistry->pSuite = sorted[0];
+    CU_FREE(sorted);
   }
 }
 
